@@ -37,6 +37,11 @@ type Client struct {
 	tmpMu  sync.Mutex
 }
 
+type ObtainOptions interface {
+	getMetadata() string
+	getRetryStrategy() RetryStrategy
+}
+
 // New creates a new Client instance with a custom namespace.
 func New(client redis.UniversalClient) *Client {
 	return &Client{client: client}
@@ -44,7 +49,7 @@ func New(client redis.UniversalClient) *Client {
 
 // Obtain tries to obtain a new lock using a key with the given TTL.
 // May return ErrNotObtained if not successful.
-func (c *Client) Obtain(ctx context.Context, key string, ttl time.Duration, opt *Options) (*Lock, error) {
+func (c *Client) Obtain(ctx context.Context, key string, ttl time.Duration, opt ObtainOptions) (*Lock, error) {
 	// Create a random token
 	token, err := c.randomToken()
 	if err != nil {
@@ -118,7 +123,7 @@ type Lock struct {
 }
 
 // Obtain is a short-cut for New(...).Obtain(...).
-func Obtain(ctx context.Context, client redis.UniversalClient, key string, ttl time.Duration, opt *Options) (*Lock, error) {
+func Obtain(ctx context.Context, client redis.UniversalClient, key string, ttl time.Duration, opt ObtainOptions) (*Lock, error) {
 	return New(client).Obtain(ctx, key, ttl, opt)
 }
 
