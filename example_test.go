@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/bsm/redislock"
 	"github.com/go-redis/redis/v8"
+	"github.com/yunmoon/redislock"
 )
 
 func Example() {
@@ -44,7 +44,7 @@ func Example() {
 	}
 
 	// Extend my lock.
-	if err := lock.Refresh(ctx, 100*time.Millisecond, nil); err != nil {
+	if err := lock.Refresh(ctx, 100*time.Millisecond); err != nil {
 		log.Fatalln(err)
 	}
 

@@ -29,23 +29,16 @@ var (
 )
 
 // RedisClient is a minimal client interface.
-type RedisClient interface {
-	SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.BoolCmd
-	Eval(ctx context.Context, script string, keys []string, args ...interface{}) *redis.Cmd
-	EvalSha(ctx context.Context, sha1 string, keys []string, args ...interface{}) *redis.Cmd
-	ScriptExists(ctx context.Context, scripts ...string) *redis.BoolSliceCmd
-	ScriptLoad(ctx context.Context, script string) *redis.StringCmd
-}
 
 // Client wraps a redis client.
 type Client struct {
-	client RedisClient
+	client redis.UniversalClient
 	tmp    []byte
 	tmpMu  sync.Mutex
 }
 
 // New creates a new Client instance with a custom namespace.
-func New(client RedisClient) *Client {
+func New(client redis.UniversalClient) *Client {
 	return &Client{client: client}
 }
 
@@ -125,7 +118,7 @@ type Lock struct {
 }
 
 // Obtain is a short-cut for New(...).Obtain(...).
-func Obtain(ctx context.Context, client RedisClient, key string, ttl time.Duration, opt *Options) (*Lock, error) {
+func Obtain(ctx context.Context, client redis.UniversalClient, key string, ttl time.Duration, opt *Options) (*Lock, error) {
 	return New(client).Obtain(ctx, key, ttl, opt)
 }
 
@@ -161,7 +154,7 @@ func (l *Lock) TTL(ctx context.Context) (time.Duration, error) {
 
 // Refresh extends the lock with a new TTL.
 // May return ErrNotObtained if refresh is unsuccessful.
-func (l *Lock) Refresh(ctx context.Context, ttl time.Duration, opt *Options) error {
+func (l *Lock) Refresh(ctx context.Context, ttl time.Duration) error {
 	ttlVal := strconv.FormatInt(int64(ttl/time.Millisecond), 10)
 	status, err := luaRefresh.Run(ctx, l.client.client, []string{l.key}, l.value, ttlVal).Result()
 	if err != nil {
